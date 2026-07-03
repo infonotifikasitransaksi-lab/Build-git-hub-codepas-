@@ -1,0 +1,6 @@
+{
+  "name": "SMS Monitor & Logger",
+  "description": "Background SMS monitoring and logger that forwards captured SMS data to a target server.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
