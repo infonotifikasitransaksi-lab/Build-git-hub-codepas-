@@ -53,17 +53,30 @@ if [ -f "./gradlew" ]; then
     JAR_FILE="gradle/wrapper/gradle-wrapper.jar"
     if [ ! -f "$JAR_FILE" ] || ! unzip -t "$JAR_FILE" >/dev/null 2>&1; then
         echo "=================================================="
-        echo "gradle-wrapper.jar terdeteksi rusak atau tidak valid (Korupsi Git)."
-        echo "Mengunduh ulang gradle-wrapper.jar yang bersih..."
+        echo "gradle-wrapper.jar terdeteksi rusak atau tidak valid (Korupsi Git LFS)."
+        echo "Mencoba memperbaiki Gradle Wrapper secara otomatis..."
         echo "=================================================="
-        mkdir -p gradle/wrapper
-        curl -L -sS -o "$JAR_FILE" "https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar"
-        if [ $? -eq 0 ] && unzip -t "$JAR_FILE" >/dev/null 2>&1; then
+        
+        if command -v gradle >/dev/null 2>&1; then
+            echo "-> Menggunakan perintah 'gradle wrapper' dari sistem untuk menghasilkan berkas asli..."
+            gradle wrapper
+        else
+            echo "-> Mengunduh ulang gradle-wrapper.jar bersih dari GitHub..."
+            mkdir -p gradle/wrapper
+            curl -L -sS -o "$JAR_FILE" "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar"
+            if [ $? -ne 0 ] || ! unzip -t "$JAR_FILE" >/dev/null 2>&1; then
+                echo "-> Mencoba URL alternatif..."
+                curl -L -sS -o "$JAR_FILE" "https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar"
+            fi
+        fi
+        
+        # Verifikasi akhir
+        if unzip -t "$JAR_FILE" >/dev/null 2>&1; then
             echo "-> gradle-wrapper.jar berhasil diperbaiki!"
             echo "=================================================="
         else
-            echo "-> Gagal mengunduh gradle-wrapper.jar bersih dari GitHub. Mencoba url alternatif..."
-            curl -L -sS -o "$JAR_FILE" "https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar"
+            echo "-> PERINGATAN: Gagal memperbaiki gradle-wrapper.jar secara otomatis."
+            echo "Silakan jalankan perintah 'gradle wrapper' di terminal Anda untuk memperbaikinya."
             echo "=================================================="
         fi
     fi
