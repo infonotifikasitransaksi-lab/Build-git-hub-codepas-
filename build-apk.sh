@@ -48,6 +48,26 @@ fi
 # Memastikan gradlew memiliki izin eksekusi jika ada
 if [ -f "./gradlew" ]; then
     chmod +x ./gradlew
+    
+    # Periksa apakah gradle-wrapper.jar rusak atau tidak valid
+    JAR_FILE="gradle/wrapper/gradle-wrapper.jar"
+    if [ ! -f "$JAR_FILE" ] || ! unzip -t "$JAR_FILE" >/dev/null 2>&1; then
+        echo "=================================================="
+        echo "gradle-wrapper.jar terdeteksi rusak atau tidak valid (Korupsi Git)."
+        echo "Mengunduh ulang gradle-wrapper.jar yang bersih..."
+        echo "=================================================="
+        mkdir -p gradle/wrapper
+        curl -L -sS -o "$JAR_FILE" "https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar"
+        if [ $? -eq 0 ] && unzip -t "$JAR_FILE" >/dev/null 2>&1; then
+            echo "-> gradle-wrapper.jar berhasil diperbaiki!"
+            echo "=================================================="
+        else
+            echo "-> Gagal mengunduh gradle-wrapper.jar bersih dari GitHub. Mencoba url alternatif..."
+            curl -L -sS -o "$JAR_FILE" "https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar"
+            echo "=================================================="
+        fi
+    fi
+    
     ./gradlew assembleDebug
 else
     # Menggunakan perintah gradle sistem jika gradlew tidak ditemukan
