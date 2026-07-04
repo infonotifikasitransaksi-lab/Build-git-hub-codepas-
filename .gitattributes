@@ -1,0 +1,4 @@
+# Ensure Git treats the Gradle wrapper jar as binary and doesn't corrupt it
+*.jar binary
+gradlew text eol=lf
+gradlew.bat text eol=crlf
