@@ -45,6 +45,24 @@ if [ ! -f "local.properties" ] && [ -d "$HOME/android-sdk" ]; then
     echo "sdk.dir=$HOME/android-sdk" > local.properties
 fi
 
+# Periksa apakah debug.keystore ada. Jika tidak, buat baru secara otomatis
+if [ ! -f "debug.keystore" ]; then
+    echo "=================================================="
+    echo "debug.keystore tidak ditemukan (karena masuk .gitignore)."
+    echo "Membuat debug.keystore baru secara otomatis menggunakan keytool..."
+    echo "=================================================="
+    keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" >/dev/null 2>&1
+    if [ $? -eq 0 ] && [ -f "debug.keystore" ]; then
+        echo "-> debug.keystore berhasil dibuat secara otomatis!"
+        echo "=================================================="
+    else
+        echo "-> PERINGATAN: keytool gagal membuat debug.keystore."
+        echo "Mencoba membuat dummy debug.keystore agar kompilasi tidak error..."
+        touch debug.keystore
+        echo "=================================================="
+    fi
+fi
+
 # Memastikan gradlew memiliki izin eksekusi jika ada
 if [ -f "./gradlew" ]; then
     chmod +x ./gradlew
