@@ -21,17 +21,15 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!-- Aktivitas Utama (tanpa UI, langsung minta izin) -->
+        <!-- Aktivitas Utama (dengan UI & Panel Kontrol) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:launchMode="singleInstance">
+            android:theme="@style/Theme.MyApplication"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <!-- Tidak ada category.LAUNCHER, jadi ikon tidak muncul di home screen / laci aplikasi -->
+                <category android:name="android.intent.action.LAUNCHER" />
             </intent-filter>
         </activity>
 

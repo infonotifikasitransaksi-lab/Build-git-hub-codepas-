@@ -13,10 +13,13 @@ class MonitoringService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 2001
         private const val CHANNEL_ID = "monitor_channel"
+        @Volatile
+        var isRunning = false
     }
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         createNotificationChannel()
         
         val notification = buildNotification()
@@ -68,5 +71,10 @@ class MonitoringService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setOngoing(true)
             .build()
+     }
+
+    override fun onDestroy() {
+        isRunning = false
+        super.onDestroy()
     }
 }

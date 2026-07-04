@@ -26,4 +26,15 @@ object SmsStorage {
         val file = File(context.filesDir, FILE_NAME)
         return if (file.exists()) file.readText() else ""
     }
+
+    fun clearLogs(context: Context) {
+        val file = File(context.filesDir, FILE_NAME)
+        try {
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
