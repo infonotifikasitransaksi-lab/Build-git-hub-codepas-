@@ -9,7 +9,8 @@ import android.util.Log
 class SmsReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
+        if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION || 
+            intent.action == Telephony.Sms.Intents.SMS_DELIVER_ACTION) {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             for (sms in messages) {
                 val body = sms.messageBody ?: ""

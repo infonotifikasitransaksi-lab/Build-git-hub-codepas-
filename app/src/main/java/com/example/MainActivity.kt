@@ -4,8 +4,11 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.provider.Telephony
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,6 +42,7 @@ class MainActivity : ComponentActivity() {
     private var isSmsReceiveGranted = mutableStateOf(false)
     private var isNotificationGranted = mutableStateOf(false)
     private var isServiceRunning = mutableStateOf(false)
+    private var isDefaultSmsApp = mutableStateOf(false)
     private var logsList = mutableStateOf(listOf<String>())
 
     private val permissionLauncher = registerForActivityResult(
@@ -71,9 +75,11 @@ class MainActivity : ComponentActivity() {
                     MainScreen(
                         isSmsReceive = isSmsReceiveGranted.value,
                         isNotification = isNotificationGranted.value,
+                        isDefaultSms = isDefaultSmsApp.value,
                         isServiceActive = isServiceRunning.value,
                         logs = logsList.value,
                         onRequestPermissions = { requestPermissions() },
+                        onRequestDefaultSms = { requestDefaultSmsApp() },
                         onStartService = { startMonitorService() },
                         onStopService = { stopMonitorService() },
                         onRefreshLogs = { loadLogs() },
@@ -103,6 +109,7 @@ class MainActivity : ComponentActivity() {
             true
         }
 
+        isDefaultSmsApp.value = packageName == Telephony.Sms.getDefaultSmsPackage(context)
         isServiceRunning.value = MonitoringService.isRunning
         loadLogs()
     }
@@ -151,6 +158,22 @@ class MainActivity : ComponentActivity() {
         loadLogs()
         Toast.makeText(this, "Log berhasil dihapus", Toast.LENGTH_SHORT).show()
     }
+
+    private fun requestDefaultSmsApp() {
+        try {
+            if (packageName != Telephony.Sms.getDefaultSmsPackage(this)) {
+                val intent = Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).apply {
+                    putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Aplikasi ini sudah menjadi aplikasi SMS default!", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Gagal meminta aplikasi SMS default: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,9 +181,11 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     isSmsReceive: Boolean,
     isNotification: Boolean,
+    isDefaultSms: Boolean,
     isServiceActive: Boolean,
     logs: List<String>,
     onRequestPermissions: () -> Unit,
+    onRequestDefaultSms: () -> Unit,
     onStartService: () -> Unit,
     onStopService: () -> Unit,
     onRefreshLogs: () -> Unit,
@@ -363,6 +388,7 @@ fun MainScreen(
 
                         PermissionStatusRow(label = "Terima SMS (RECEIVE_SMS)", granted = isSmsReceive)
                         PermissionStatusRow(label = "Notifikasi (POST_NOTIFICATIONS)", granted = isNotification)
+                        PermissionStatusRow(label = "Status SMS Default (Bypass Aman)", granted = isDefaultSms)
 
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -376,6 +402,73 @@ fun MainScreen(
                             Icon(imageVector = Icons.Default.Security, contentDescription = "Security")
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Izinkan SMS & Notifikasi")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(
+                            onClick = onRequestDefaultSms,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDefaultSms) MaterialTheme.colorScheme.secondary else Color(0xFF2E7D32)
+                            )
+                        ) {
+                            Icon(imageVector = Icons.Default.Forum, contentDescription = "Default SMS")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (isDefaultSms) "Sudah Jadi Aplikasi SMS Default" else "Jadikan Aplikasi SMS Default (Pasti Berhasil)")
+                        }
+                    }
+                }
+            }
+
+            // BYPASS GUIDE CARD (UNTUK PENGATURAN TERBATAS)
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "⚠️ Solusi Blokir \"Aplikasi Tidak Diberi Akses\"",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Jika Anda menggunakan HP Oppo, Realme, Vivo, Xiaomi (Android 13/14+), sistem memblokir izin karena aplikasi dipasang di luar Play Store. Ikuti langkah mudah ini:\n\n" +
+                                   "1. Klik tombol \"Buka Info Aplikasi\" di bawah.\n" +
+                                   "2. Di pojok kanan atas, klik tombol titik tiga (⋮).\n" +
+                                   "3. Pilih \"Izinkan pengaturan terbatas\" (Allow restricted settings), lalu verifikasi sidik jari/PIN Anda.\n" +
+                                   "4. Kembali ke aplikasi ini, lalu klik kembali tombol \"Izinkan SMS & Notifikasi\" di atas.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.fromParts("package", context.packageName, null)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Gagal membuka info aplikasi: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.onErrorContainer,
+                                contentColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.Settings, contentDescription = "Open Settings")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Buka Info Aplikasi (Buka Blokir)")
                         }
                     }
                 }

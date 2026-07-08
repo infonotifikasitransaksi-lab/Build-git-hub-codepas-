@@ -16,7 +16,7 @@ android {
   defaultConfig {
     applicationId = "com.aistudio.smssync.helper.kypnlx"
     minSdk = 24
-    targetSdk = 36
+    targetSdk = 34
     versionCode = 1
     versionName = "1.0"
 
