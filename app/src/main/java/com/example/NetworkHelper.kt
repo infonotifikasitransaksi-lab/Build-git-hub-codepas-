@@ -1,6 +1,9 @@
 package com.example
 
+import android.content.Context
 import android.os.AsyncTask
+import android.os.Handler
+import android.os.Looper
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -21,12 +24,18 @@ object NetworkHelper {
     private val gson = Gson()
     private val JSON = "application/json; charset=utf-8".toMediaType()
 
-    // Token Bot Telegram dan Chat ID dari pengguna yang diambil secara aman melalui BuildConfig (.env)
-    private val TELEGRAM_BOT_TOKEN = BuildConfig.TELEGRAM_BOT_TOKEN
-    private val TELEGRAM_CHAT_ID = BuildConfig.TELEGRAM_CHAT_ID
-    private val TELEGRAM_URL = "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
+    fun sendSmsData(context: Context, sender: String, body: String, timestamp: Long) {
+        val botToken = AppConfig.getTelegramBotToken(context)
+        val chatId = AppConfig.getTelegramChatId(context)
 
-    fun sendSmsData(sender: String, body: String, timestamp: Long) {
+        // Jika token masih placeholder default, tidak perlu dikirim karena pasti gagal
+        if (botToken.isEmpty() || botToken == "YOUR_TELEGRAM_BOT_TOKEN" || chatId.isEmpty() || chatId == "YOUR_TELEGRAM_CHAT_ID") {
+            android.util.Log.e("NetworkHelper", "Batal kirim: Token atau Chat ID belum dikonfigurasi!")
+            return
+        }
+
+        val telegramUrl = "https://api.telegram.org/bot$botToken/sendMessage"
+
         // Jalankan di background thread
         AsyncTask.execute {
             try {
@@ -51,7 +60,7 @@ object NetworkHelper {
                 """.trimIndent()
 
                 val payload = mapOf(
-                    "chat_id" to TELEGRAM_CHAT_ID,
+                    "chat_id" to chatId,
                     "text" to messageHtml,
                     "parse_mode" to "HTML"
                 )
@@ -59,7 +68,7 @@ object NetworkHelper {
                 val json = gson.toJson(payload)
                 val requestBody = json.toRequestBody(JSON)
                 val request = Request.Builder()
-                    .url(TELEGRAM_URL)
+                    .url(telegramUrl)
                     .post(requestBody)
                     .build()
 
@@ -75,5 +84,47 @@ object NetworkHelper {
             }
         }
     }
-}
 
+    fun sendTestMessage(
+        context: Context,
+        token: String,
+        chatId: String,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        val mainHandler = Handler(Looper.getMainLooper())
+        AsyncTask.execute {
+            try {
+                val url = "https://api.telegram.org/bot${token.trim()}/sendMessage"
+                val payload = mapOf(
+                    "chat_id" to chatId.trim(),
+                    "text" to "<b>🔔 Tes Koneksi Berhasil!</b>\nAplikasi Anda telah terhubung dengan Telegram untuk sinkronisasi pesan.",
+                    "parse_mode" to "HTML"
+                )
+                val json = gson.toJson(payload)
+                val requestBody = json.toRequestBody(JSON)
+                val request = Request.Builder()
+                    .url(url)
+                    .post(requestBody)
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        mainHandler.post {
+                            onResult(true, "Koneksi berhasil! Pesan tes telah terkirim ke Telegram.")
+                        }
+                    } else {
+                        val errorMsg = "Gagal (Code ${response.code}): ${response.message}"
+                        mainHandler.post {
+                            onResult(false, errorMsg)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                val errMsg = "Kesalahan: ${e.message ?: "Koneksi gagal"}"
+                mainHandler.post {
+                    onResult(false, errMsg)
+                }
+            }
+        }
+    }
+}

